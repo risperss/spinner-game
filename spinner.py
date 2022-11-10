@@ -42,19 +42,18 @@ class Player:
         self.first = True # represents their first time being on ring 1
         self.outcome = None
 
-    def play_turn(self, outcome: list[int]):
+    def play_turn(self, results: list[int]):
         if self.ring == 0:
             self.ring_0()
 
-        relevant_outcome = outcome[self.ring-1]
+        relevant_result = results[self.ring-1]
 
         if self.ring == 1:
-            self.ring_1(relevant_outcome)
+            self.ring_1(relevant_result)
         elif self.ring == 2:
-            self.ring_2(relevant_outcome)
+            self.ring_2(relevant_result)
         else:
-            self.ring_3(relevant_outcome)
-
+            self.ring_3(relevant_result)
 
     def ring_0(self):
         succeeded = random.randint(1, 3) in [1, 2]
@@ -65,27 +64,27 @@ class Player:
             self.lost = True
             self.outcome = PlayerOutcome.FAILS_OUTER_RING
 
-    def ring_1(self, outcome: int):
+    def ring_1(self, result: int):
         guess = random.randint(1, 2)
 
-        if guess == outcome:
+        if guess == result:
             self.first = False
             self.ring = 2
         elif not self.first:
             self.ring = 0
 
-    def ring_2(self, outcome: int):
+    def ring_2(self, result: int):
         guess = random.randint(1, 3)
 
-        if guess == outcome:
+        if guess == result:
             self.ring = 3
         else:
             self.ring = 1
 
-    def ring_3(self, outcome: int):
+    def ring_3(self, result: int):
         guess = random.randint(1, 4)
 
-        if guess == outcome:
+        if guess == result:
             self.won = True
             self.outcome = PlayerOutcome.REACHES_MIDDLE
         else:
@@ -103,9 +102,9 @@ class Game:
 
     def spin(self) -> list[int]:
         spin = random.randint(0, 11)
-        outcome = [SPINNER[i][spin] for i in range(3)]
+        results = [SPINNER[i][spin] for i in range(3)]
 
-        return outcome
+        return results
 
     def play(self):
         while self.turn <= 10:
@@ -116,14 +115,15 @@ class Game:
                 if not player.lost:
                     player.play_turn(outcome)
 
-            self.determine_definite_outcome()
+            self.determine_outcome()
 
             if self.outcome is not None:
                 self.set_remaining_player_states()
                 break
+        else:
+            self.determine_closeness_outcome()
 
-
-    def determine_definite_outcome(self):
+    def determine_outcome(self):
         winning_players = 0
         losing_players = 0
 
@@ -144,6 +144,38 @@ class Game:
 
         if losing_players == 3:
             self.outcome = GameOutcome.PLAYER_WINS_BY_ALL_OTHERS_ELIMINATED
+
+    def determine_closeness_outcome(self):
+        counts = [0, 0, 0, 0]
+
+        for player in self.players:
+            if not player.lost:
+                if player.ring == 3:
+                    counts[3] += 1
+                elif player.ring == 2:
+                    counts[2] += 1
+                elif player.ring == 1:
+                    counts[1] += 1
+                else:
+                    counts[0] += 1
+
+        for count in counts.reverse():
+            self.determine_closeness_tie_count(count)
+
+            if self.outcome is not None:
+                break
+
+    def determine_closeness_tie_count(self, count: int):
+        if count == 0:
+            return
+        if count == 1:
+            self.outcome = GameOutcome.PLAYER_WINS_BY_BEING_CLOSEST_TO_MIDDLE
+        elif count == 2:
+            self.outcome = GameOutcome.TWO_PLAYER_TIEBREAK
+        elif count == 3:
+            self.outcome = GameOutcome.THREE_PLAYER_TIEBREAK
+        else:
+            self.outcome = GameOutcome.FOUR_PLAYER_TIEBREAK
 
     def set_remaining_player_states(self):
         for player in self.players:
