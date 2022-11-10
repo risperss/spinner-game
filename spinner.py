@@ -34,8 +34,7 @@ class Player:
     first: bool
     outcome: PlayerOutcome
 
-    def __init__(self, id: int):
-        self.id = id
+    def __init__(self):
         self.won = False # implies they reached the middle
         self.lost = False # implies they got to the last row and failed
         self.ring = 1
@@ -209,6 +208,3 @@ def run(iterations: int):
 
         for datum in data:
             writer.writerow(datum)
-
-
-run(100000)
