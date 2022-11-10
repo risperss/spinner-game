@@ -1,5 +1,6 @@
 from enum import Enum
 import random
+import csv
 
 
 # 3 rows divided into 4ths or 3rds, therefore 12 parts
@@ -27,7 +28,6 @@ class GameOutcome(Enum):
 
 
 class Player:
-    id: int
     won: bool
     lost: bool
     ring: int
@@ -97,8 +97,9 @@ class Game:
     outcome: GameOutcome
 
     def __init__(self):
-        self.players = [Player(1), Player(2), Player(3), Player(4)]
+        self.players = [Player(), Player(), Player(), Player()]
         self.turn = 0
+        self.outcome = None
 
     def spin(self) -> list[int]:
         spin = random.randint(0, 11)
@@ -118,10 +119,11 @@ class Game:
             self.determine_outcome()
 
             if self.outcome is not None:
-                self.set_remaining_player_states()
                 break
         else:
             self.determine_closeness_outcome()
+
+        self.set_remaining_player_states()
 
     def determine_outcome(self):
         winning_players = 0
@@ -144,6 +146,8 @@ class Game:
 
         if losing_players == 3:
             self.outcome = GameOutcome.PLAYER_WINS_BY_ALL_OTHERS_ELIMINATED
+        elif losing_players == 4:
+            self.outcome = GameOutcome.FOUR_PLAYER_TIEBREAK
 
     def determine_closeness_outcome(self):
         counts = [0, 0, 0, 0]
@@ -183,3 +187,28 @@ class Game:
         for player in self.players:
             if player.outcome is None:
                 player.outcome = PlayerOutcome.REMAINS_IN_RINGS
+
+
+def run(iterations: int):
+    data = []
+
+    for _ in range(iterations):
+        game = Game()
+        game.play()
+
+        datum = [game.outcome.name]
+
+        for player in game.players:
+            datum.append(player.outcome.name)
+
+        data.append(datum)
+
+
+    with open("data.csv", "a", newline="") as f:
+        writer = csv.writer(f)
+
+        for datum in data:
+            writer.writerow(datum)
+
+
+run(100000)
