@@ -202,7 +202,6 @@ def run(iterations: int):
 
         data.append(datum)
 
-
     with open("data.csv", "a", newline="") as f:
         writer = csv.writer(f)
 
