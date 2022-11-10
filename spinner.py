@@ -107,7 +107,7 @@ class Game:
         return results
 
     def play(self):
-        while self.turn <= 10:
+        while self.turn < 10:
             self.turn += 1
             outcome = self.spin()
 
@@ -195,7 +195,7 @@ def run(iterations: int):
         game = Game()
         game.play()
 
-        datum = [game.outcome.name]
+        datum = [game.outcome.name, game.turn]
 
         for player in game.players:
             datum.append(player.outcome.name)
