@@ -159,7 +159,9 @@ class Game:
                 else:
                     counts[0] += 1
 
-        for count in counts.reverse():
+        counts.reverse() # doing this for better readability in above loop
+
+        for count in counts:
             self.determine_closeness_tie_count(count)
 
             if self.outcome is not None:
