@@ -1,9 +1,10 @@
 from enum import Enum
 import random
+import click
 import csv
 
 
-# 3 rows divided into 4ths or 3rds, therefore 12 parts
+# 3 rows divided into halves, 3rds, 4ths, LCM = 12
 # We can ignore ring 0 because the player is not making a guess
 SPINNER = [
     [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
@@ -28,15 +29,11 @@ class GameOutcome(Enum):
 
 
 class Player:
-    won: bool
-    lost: bool
     ring: int
     first: bool
     outcome: PlayerOutcome
 
     def __init__(self):
-        self.won = False # implies they reached the middle
-        self.lost = False # implies they got to the last row and failed
         self.ring = 1
         self.first = True # represents their first time being on ring 1
         self.outcome = None
@@ -60,7 +57,6 @@ class Player:
         if succeeded:
             self.ring = 1
         else:
-            self.lost = True
             self.outcome = PlayerOutcome.FAILS_OUTER_RING
 
     def ring_1(self, result: int):
@@ -84,7 +80,6 @@ class Player:
         guess = random.randint(1, 4)
 
         if guess == result:
-            self.won = True
             self.outcome = PlayerOutcome.REACHES_MIDDLE
         else:
             self.ring = 2
@@ -112,12 +107,12 @@ class Game:
             outcome = self.spin()
 
             for player in self.players:
-                if not player.lost:
+                if player.outcome != PlayerOutcome.FAILS_OUTER_RING:
                     player.play_turn(outcome)
 
             self.determine_outcome()
 
-            if self.outcome is not None:
+            if self.outcome:
                 break
         else:
             self.determine_closeness_outcome()
@@ -129,9 +124,9 @@ class Game:
         losing_players = 0
 
         for player in self.players:
-            if player.won:
+            if player.outcome == PlayerOutcome.REACHES_MIDDLE:
                 winning_players += 1
-            if player.lost:
+            elif player.outcome == PlayerOutcome.FAILS_OUTER_RING:
                 losing_players += 1
 
         if winning_players == 1:
@@ -152,7 +147,7 @@ class Game:
         counts = [0, 0, 0, 0]
 
         for player in self.players:
-            if not player.lost:
+            if player.outcome != PlayerOutcome.FAILS_OUTER_RING:
                 if player.ring == 3:
                     counts[3] += 1
                 elif player.ring == 2:
@@ -167,7 +162,7 @@ class Game:
         for count in counts:
             self.determine_closeness_tie_count(count)
 
-            if self.outcome is not None:
+            if self.outcome:
                 break
 
     def determine_closeness_tie_count(self, count: int):
@@ -188,10 +183,13 @@ class Game:
                 player.outcome = PlayerOutcome.REMAINS_IN_RINGS
 
 
-def run(iterations: int):
+@click.command()
+@click.option("--count", default=1, help="Number of runs.")
+def spinner(count: int):
+    """Simple program that runs the spinner game a total of COUNT times."""
     data = []
 
-    for _ in range(iterations):
+    for _ in range(count):
         game = Game()
         game.play()
 
@@ -202,8 +200,12 @@ def run(iterations: int):
 
         data.append(datum)
 
-    with open("data.csv", "a", newline="") as f:
+    with open("data.csv", "w", newline="") as f:
         writer = csv.writer(f)
 
         for datum in data:
             writer.writerow(datum)
+
+
+if __name__ == "__main__":
+    spinner()
